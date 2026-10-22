@@ -49,6 +49,11 @@ ne peut pas le bloquer, et le bundle Mermaid (~5 Mo) n'est chargé qu'au premier
 npm test                 # tests unitaires de la détection
 npm install              # puis, pour mettre à jour Mermaid :
 npm run update-mermaid   # copie node_modules/mermaid/dist/mermaid.min.js dans vendor/
+npm run package          # crée dist/mermaid-preview-<version>.zip pour le Chrome Web Store
 ```
+
+`npm run package` ne met dans le zip que les fichiers utiles à l'extension (`manifest.json`, `icons/`, `src/`,
+`preview/`, `vendor/`), vérifie que tous les fichiers cités dans le manifest sont présents, et nomme l'archive
+d'après la `version` du manifest : pensez à l'incrémenter avant chaque nouvelle soumission.
 
 Après une modification, cliquer sur ↻ dans `chrome://extensions` puis recharger l'onglet.
