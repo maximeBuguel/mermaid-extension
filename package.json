@@ -6,7 +6,8 @@
   "license": "MIT",
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "update-mermaid": "node scripts/update-mermaid.js"
+    "update-mermaid": "node scripts/update-mermaid.js",
+    "package": "node scripts/package.js"
   },
   "devDependencies": {
     "mermaid": "12.1.0"
