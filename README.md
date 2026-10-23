@@ -1,4 +1,4 @@
-# Mermaid Preview — extension Chrome
+# Mermaid Preview — extension Chrome et Firefox
 
 Affiche un aperçu des diagrammes [Mermaid](https://mermaid.js.org/) écrits dans des blocs de code
 (issues Jira, Confluence, GitLab, wikis…).
@@ -12,11 +12,22 @@ Affiche un aperçu des diagrammes [Mermaid](https://mermaid.js.org/) écrits dan
 
 ## Installation (mode développeur)
 
+Aucune étape de build n'est nécessaire : la bibliothèque Mermaid est fournie dans `vendor/`.
+
+**Chrome / Edge**
+
 1. Ouvrir `chrome://extensions`.
 2. Activer le **mode développeur** (en haut à droite).
 3. Cliquer sur **Charger l'extension non empaquetée** et sélectionner ce dossier.
 
-Aucune étape de build n'est nécessaire : la bibliothèque Mermaid est fournie dans `vendor/`.
+**Firefox** (version 140 ou plus récente)
+
+1. Générer le paquet Firefox : `npm run package:firefox`.
+2. Ouvrir `about:debugging#/runtime/this-firefox`.
+3. Cliquer sur **Charger un module complémentaire temporaire…** et choisir `dist/mermaid-preview-<version>-firefox.zip`.
+
+Le module reste chargé jusqu'au redémarrage de Firefox. Si les icônes n'apparaissent pas, vérifier dans
+`about:addons` → Mermaid Preview → **Permissions** que l'accès aux sites est autorisé.
 
 ## Détection
 
@@ -37,10 +48,10 @@ du bloc sur « aucun » (ou n'importe quel autre).
 | `src/detect.js` | Heuristiques de détection (testées dans `tests/`). |
 | `src/content.js` | Parcourt la page (et ses mises à jour via `MutationObserver`), place les icônes et gère l'infobulle. Icônes et infobulle vivent dans un Shadow DOM pour ne pas subir le CSS de la page. |
 | `preview/preview.html` | Page de l'extension chargée dans une iframe de l'infobulle : c'est elle qui exécute Mermaid. |
-| `vendor/mermaid.min.js` | Mermaid (licence MIT), embarqué car les extensions MV3 ne peuvent pas charger de code distant. |
+| `vendor/mermaid/` | Mermaid (licence MIT, version dans `VERSION`), embarqué car les extensions MV3 ne peuvent pas charger de code distant. C'est la version ESM découpée, non modifiée : addons.mozilla.org refuse les fichiers JS trop gros (le `mermaid.min.js` monolithique fait 5 Mo), et seuls les types de diagrammes utilisés sont chargés. |
 
 Le rendu se fait dans une iframe de l'extension plutôt que dans la page : la CSP de Jira (ou de tout autre site)
-ne peut pas le bloquer, et le bundle Mermaid (~5 Mo) n'est chargé qu'au premier survol. Mermaid tourne avec
+ne peut pas le bloquer, et Mermaid n'est chargé qu'au premier survol. Mermaid tourne avec
 `securityLevel: 'strict'`, et l'extension ne demande aucune permission particulière.
 
 ## Développement
@@ -48,12 +59,23 @@ ne peut pas le bloquer, et le bundle Mermaid (~5 Mo) n'est chargé qu'au premier
 ```bash
 npm test                 # tests unitaires de la détection
 npm install              # puis, pour mettre à jour Mermaid :
-npm run update-mermaid   # copie node_modules/mermaid/dist/mermaid.min.js dans vendor/
-npm run package          # crée dist/mermaid-preview-<version>.zip pour le Chrome Web Store
+npm run update-mermaid   # copie le build ESM de node_modules/mermaid dans vendor/mermaid/
+npm run package          # crée les zips Chrome et Firefox dans dist/
+npm run package:chrome   # dist/mermaid-preview-<version>-chrome.zip  → Chrome Web Store
+npm run package:firefox  # dist/mermaid-preview-<version>-firefox.zip → addons.mozilla.org
 ```
 
-`npm run package` ne met dans le zip que les fichiers utiles à l'extension (`manifest.json`, `icons/`, `src/`,
-`preview/`, `vendor/`), vérifie que tous les fichiers cités dans le manifest sont présents, et nomme l'archive
-d'après la `version` du manifest : pensez à l'incrémenter avant chaque nouvelle soumission.
+Les zips ne contiennent que les fichiers utiles à l'extension (`manifest.json`, `icons/`, `src/`, `preview/`,
+`vendor/`). Le script vérifie que tous les fichiers cités dans le manifest sont présents et nomme l'archive d'après
+la `version` du manifest : pensez à l'incrémenter avant chaque nouvelle soumission.
 
-Après une modification, cliquer sur ↻ dans `chrome://extensions` puis recharger l'onglet.
+`manifest.json` est celui de Chrome. Pour Firefox, le script y ajoute `browser_specific_settings` : l'identifiant
+`mermaid-preview@maximebuguel` (définitif une fois l'extension publiée), la version minimale de Firefox et la
+déclaration « aucune donnée collectée » exigée par addons.mozilla.org.
+
+Pour valider le paquet Firefox comme le fera addons.mozilla.org : `npx addons-linter dist/*-firefox.zip`. Les
+avertissements restants concernent uniquement le code de Mermaid (`eval`, `innerHTML`), bibliothèque tierce non
+modifiée : le préciser dans les notes destinées aux relecteurs lors de la soumission.
+
+Après une modification, cliquer sur ↻ dans `chrome://extensions` (ou **Recharger** dans `about:debugging`) puis
+recharger l'onglet.

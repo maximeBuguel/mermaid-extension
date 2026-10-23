@@ -36,10 +36,10 @@
     '[aria-hidden="true"]',
   ].join(',');
 
-  const ICON_SVG =
-    '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">' +
-    '<path fill="currentColor" d="M3 4h7v6H3zm11 0h7v6h-7zM8.5 14h7v6h-7z' +
-    'M6 10h1.5v2.25h9.5V10h1.5v3.75h-5.75V14h-1.5v-.25H6z"/></svg>';
+  // Pictogram of a small diagram: two boxes linked to a third one.
+  const ICON_PATH =
+    'M3 4h7v6H3zm11 0h7v6h-7zM8.5 14h7v6h-7z' +
+    'M6 10h1.5v2.25h9.5V10h1.5v3.75h-5.75V14h-1.5v-.25H6z';
 
   const STYLE = `
     :host { all: initial; }
@@ -120,6 +120,15 @@
     const style = document.createElement('style');
     style.textContent = STYLE;
     shadow.appendChild(style);
+    // Constructed stylesheets are not subject to the page's CSP `style-src`,
+    // which some browsers (Firefox) may apply to the <style> element above.
+    try {
+      const sheet = new CSSStyleSheet();
+      sheet.replaceSync(STYLE);
+      shadow.adoptedStyleSheets = [sheet];
+    } catch {
+      // Not supported here: the <style> element is enough.
+    }
     document.documentElement.appendChild(host);
 
     // Icons and tooltip from a previous (removed) overlay must be recreated.
@@ -131,13 +140,27 @@
     iframeReady = false;
   }
 
+  function createIconSvg() {
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('width', '16');
+    svg.setAttribute('height', '16');
+    svg.setAttribute('aria-hidden', 'true');
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('fill', 'currentColor');
+    path.setAttribute('d', ICON_PATH);
+    svg.appendChild(path);
+    return svg;
+  }
+
   function createIcon(element) {
     const icon = document.createElement('div');
     icon.className = 'icon';
     icon.title = 'Aperçu du diagramme Mermaid';
     icon.setAttribute('role', 'button');
     icon.setAttribute('aria-label', 'Aperçu du diagramme Mermaid');
-    icon.innerHTML = ICON_SVG;
+    icon.appendChild(createIconSvg());
     icon.hidden = true;
 
     icon.addEventListener('mouseenter', () => showTooltip(element));
