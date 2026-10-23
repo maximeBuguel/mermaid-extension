@@ -1,4 +1,8 @@
-// Builds dist/mermaid-preview-<version>.zip, ready to upload to the Chrome Web Store.
+// Builds the store packages:
+//   dist/mermaid-preview-<version>-chrome.zip   → Chrome Web Store
+//   dist/mermaid-preview-<version>-firefox.zip  → addons.mozilla.org
+// Usage: node scripts/package.js [chrome|firefox]  (both when omitted)
+//
 // Only the files the extension needs at runtime are included, with manifest.json at the root.
 // Written without dependencies so it runs on any OS without `zip` installed.
 const fs = require('node:fs');
@@ -9,7 +13,26 @@ const root = path.join(__dirname, '..');
 const INCLUDE = ['manifest.json', 'icons', 'src', 'preview', 'vendor'];
 
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
-const output = path.join(root, 'dist', `mermaid-preview-${manifest.version}.zip`);
+
+// manifest.json targets Chrome; Firefox needs a few extra keys.
+const TARGETS = {
+  chrome: (base) => base,
+  firefox: (base) => ({
+    ...base,
+    browser_specific_settings: {
+      gecko: {
+        // Permanent identifier of the add-on on addons.mozilla.org: never change it once published.
+        id: 'mermaid-preview@maximebuguel',
+        // First version supporting `data_collection_permissions`.
+        strict_min_version: '140.0',
+        // The extension does not collect or transmit any data.
+        data_collection_permissions: { required: ['none'] },
+      },
+      // Same key on Firefox for Android, where it is supported from 142.
+      gecko_android: { strict_min_version: '142.0' },
+    },
+  }),
+};
 
 function listFiles(relative) {
   const absolute = path.join(root, relative);
@@ -50,17 +73,18 @@ function dosDateTime(date) {
   return { time, day };
 }
 
-function buildZip(files) {
+/** `entries`: [{ name, data, mtime }] */
+function buildZip(entries) {
   const localParts = [];
   const centralParts = [];
   let offset = 0;
 
-  for (const file of files) {
-    const data = fs.readFileSync(path.join(root, file));
+  for (const entry of entries) {
+    const data = entry.data;
     const compressed = zlib.deflateRawSync(data, { level: 9 });
-    const name = Buffer.from(file, 'utf8');
+    const name = Buffer.from(entry.name, 'utf8');
     const crc = crc32(data);
-    const { time, day } = dosDateTime(fs.statSync(path.join(root, file)).mtime);
+    const { time, day } = dosDateTime(entry.mtime);
 
     const local = Buffer.alloc(30);
     local.writeUInt32LE(0x04034b50, 0); // local file header signature
@@ -97,20 +121,35 @@ function buildZip(files) {
   const centralDirectory = Buffer.concat(centralParts);
   const end = Buffer.alloc(22);
   end.writeUInt32LE(0x06054b50, 0); // end of central directory signature
-  end.writeUInt16LE(files.length, 8);
-  end.writeUInt16LE(files.length, 10);
+  end.writeUInt16LE(entries.length, 8);
+  end.writeUInt16LE(entries.length, 10);
   end.writeUInt32LE(centralDirectory.length, 12);
   end.writeUInt32LE(offset, 16);
 
   return Buffer.concat([...localParts, centralDirectory, end]);
 }
 
+const requested = process.argv.slice(2);
+const unknown = requested.filter((target) => !TARGETS[target]);
+if (unknown.length) {
+  console.error(`Unknown target: ${unknown.join(', ')} (expected: ${Object.keys(TARGETS).join(', ')})`);
+  process.exit(1);
+}
+
 const files = INCLUDE.flatMap(listFiles);
 checkManifestReferences(files);
+fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 
-fs.mkdirSync(path.dirname(output), { recursive: true });
-fs.writeFileSync(output, buildZip(files));
+for (const target of requested.length ? requested : Object.keys(TARGETS)) {
+  const targetManifest = Buffer.from(`${JSON.stringify(TARGETS[target](manifest), null, 2)}\n`);
+  const entries = files.map((file) => ({
+    name: file,
+    data: file === 'manifest.json' ? targetManifest : fs.readFileSync(path.join(root, file)),
+    mtime: fs.statSync(path.join(root, file)).mtime,
+  }));
 
-const size = (fs.statSync(output).size / 1024 / 1024).toFixed(2);
-console.log(`${path.relative(root, output)} (${files.length} files, ${size} MB)`);
-for (const file of files) console.log(`  ${file}`);
+  const output = path.join(root, 'dist', `mermaid-preview-${manifest.version}-${target}.zip`);
+  fs.writeFileSync(output, buildZip(entries));
+  const size = (fs.statSync(output).size / 1024 / 1024).toFixed(2);
+  console.log(`${path.relative(root, output)} (${files.length} files, ${size} MB)`);
+}
