@@ -84,3 +84,30 @@ modifiée : le préciser dans les notes destinées aux relecteurs lors de la sou
 
 Après une modification, cliquer sur ↻ dans `chrome://extensions` (ou **Recharger** dans `about:debugging`) puis
 recharger l'onglet.
+
+## Publier une nouvelle version
+
+Les évolutions sont tenues à jour dans [`CHANGELOG.md`](CHANGELOG.md), sous « Non publié », au fil des
+modifications. Pour publier :
+
+1. Préparer la version, en choisissant le type de montée (voir l'en-tête du changelog) :
+
+   ```bash
+   npm run release -- patch   # 1.0.0 → 1.0.1 : corrections
+   npm run release -- minor   # 1.0.0 → 1.1.0 : nouvelles fonctionnalités
+   npm run release -- major   # 1.0.0 → 2.0.0 : changement de comportement, nouvelles permissions…
+   ```
+
+   Le script date la section « Non publié » du changelog sous le nouveau numéro, met à jour la version dans
+   `manifest.json` et `package.json`, génère les deux zips dans `dist/` et affiche les notes de version. Il refuse
+   une version qui ne serait pas supérieure à l'actuelle (les stores la rejetteraient) ou un changelog vide.
+2. Commiter (« Release x.y.z »), faire valider la pull request et la merger dans `main`.
+3. Tagger le commit publié : `git tag vx.y.z && git push origin vx.y.z`.
+4. Envoyer les zips :
+   - **Chrome Web Store** : console développeur → l'extension → **Package** → **Importer un nouveau package** avec
+     `dist/mermaid-preview-x.y.z-chrome.zip`, puis **Envoyer pour examen**. Les utilisateurs reçoivent la mise à jour
+     automatiquement après validation.
+   - **addons.mozilla.org** : **Gérer les versions** → **Envoyer une nouvelle version** avec
+     `dist/mermaid-preview-x.y.z-firefox.zip`, et coller les notes de version affichées par le script.
+
+`npm test` vérifie que `manifest.json` et `package.json` ont la même version et que le changelog la documente.
