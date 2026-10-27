@@ -13,6 +13,8 @@ _Supprimé_) ; `npm run release` transforme ensuite cette section en nouvelle ve
 
 ## [Non publié]
 
+## [1.0.1] - 2026-10-27
+
 ### Corrigé
 
 - Zoom : sur un diagramme très large, le zoom maximal permet désormais d'atteindre au moins deux fois la taille
