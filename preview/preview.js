@@ -15,7 +15,8 @@ const zoomOutButton = document.getElementById('zoom-out');
 const zoomResetButton = document.getElementById('zoom-reset');
 
 const ZOOM_STEP = 1.25;
-const MAX_ZOOM = 8; // relative to the initial (fit-to-width) zoom
+const MAX_ZOOM = 8; // relative to the initial (fit-to-width) zoom...
+const MAX_SCALE = 2; // ...but always allows twice the diagram's real size
 const KEYBOARD_PAN = 40;
 
 let renderCounter = 0;
@@ -56,7 +57,7 @@ function fitScale() {
 
 function scaleBounds() {
   const fitAll = Math.min(fitScale(), window.innerHeight / diagram.height);
-  return { min: fitAll / 2, max: fitScale() * MAX_ZOOM };
+  return { min: fitAll / 2, max: Math.max(fitScale() * MAX_ZOOM, MAX_SCALE) };
 }
 
 /** Centers the diagram on an axis where it fits, otherwise keeps the frame covered. */

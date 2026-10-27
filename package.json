@@ -9,7 +9,8 @@
     "update-mermaid": "node scripts/update-mermaid.js",
     "package": "node scripts/package.js",
     "package:chrome": "node scripts/package.js chrome",
-    "package:firefox": "node scripts/package.js firefox"
+    "package:firefox": "node scripts/package.js firefox",
+    "release": "node scripts/release.js"
   },
   "devDependencies": {
     "mermaid": "12.1.0"
