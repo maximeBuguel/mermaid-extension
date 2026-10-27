@@ -6,7 +6,24 @@
     <link rel="stylesheet" href="preview.css" />
   </head>
   <body>
-    <div id="diagram"></div>
+    <div id="viewport">
+      <div id="diagram"></div>
+    </div>
+    <div id="toolbar" hidden>
+      <button type="button" id="zoom-out" title="Zoom arrière (−)" aria-label="Zoom arrière">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <path d="M15.5 15.5 21 21M7.5 10.5h6" />
+        </svg>
+      </button>
+      <button type="button" id="zoom-reset" title="Réinitialiser le zoom (0)">100 %</button>
+      <button type="button" id="zoom-in" title="Zoom avant (+)" aria-label="Zoom avant">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <path d="M15.5 15.5 21 21M7.5 10.5h6M10.5 7.5v6" />
+        </svg>
+      </button>
+    </div>
     <script type="module" src="preview.js"></script>
   </body>
 </html>
