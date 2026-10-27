@@ -8,6 +8,11 @@ Affiche un aperçu des diagrammes [Mermaid](https://mermaid.js.org/) écrits dan
 - Au survol de l'icône, une infobulle affiche le diagramme rendu.
   - Un clic sur l'icône épingle l'infobulle ; `Échap` ou un clic ailleurs la ferme.
   - L'aperçu se met à jour si le code est modifié pendant qu'il est ouvert.
+  - Pour les grands diagrammes, des loupes **+** / **−** permettent de zoomer (le pourcentage, au milieu, réinitialise
+    la vue). On peut aussi zoomer avec `Ctrl` + molette (ou le pincement du trackpad), un double‑clic (`Maj` +
+    double‑clic pour dézoomer) ou les touches `+` / `-` / `0`, et se déplacer en faisant glisser le diagramme, avec la
+    molette ou avec les flèches. Dès qu'on zoome ou qu'on se déplace, l'infobulle reste ouverte jusqu'à `Échap` ou un
+    clic ailleurs.
   - Le thème clair/sombre suit celui de la page.
 
 ## Installation (mode développeur)

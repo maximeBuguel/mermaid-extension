@@ -24,6 +24,9 @@
   const TOOLTIP_GAP = 8;
   const VIEWPORT_MARGIN = 12;
   const HIDE_DELAY = 250;
+  // Leaves room for the zoom toolbar of the preview.
+  const MIN_DIAGRAM_WIDTH = 140;
+  const MIN_DIAGRAM_HEIGHT = 80;
   const SCAN_DELAY = 300;
 
   // Elements whose text is decoration rather than code (line numbers, etc.).
@@ -108,6 +111,7 @@
   let requestCounter = 0;
   let currentRequestId = 0;
   let previewSize = null;
+  let lastRenderedElement = null;
 
   // ---------------------------------------------------------------------------
   // Overlay (shadow DOM, isolated from page styles)
@@ -426,10 +430,14 @@
   function applyPreviewSize() {
     if (!iframe || !previewSize) return;
     const max = maxTooltipSize();
-    const width = Math.max(80, Math.min(previewSize.width, max.width));
-    // When the diagram is scaled down to fit the width, its height shrinks too.
-    const scaledHeight = previewSize.height * (width / previewSize.width);
-    const height = Math.max(40, Math.min(Math.ceil(scaledHeight), max.height));
+    const isDiagram = previewSize.kind === 'diagram';
+    const width = Math.max(isDiagram ? MIN_DIAGRAM_WIDTH : 80, Math.min(previewSize.width, max.width));
+    // When the diagram is scaled down to fit the width, its height shrinks too...
+    const scale = Math.min(1, width / previewSize.width);
+    let height = previewSize.height * scale;
+    // ...which turns wide diagrams into a thin strip: leave room to zoom into them.
+    if (isDiagram && scale < 1) height = Math.max(height, Math.min(previewSize.height, max.height / 2));
+    height = Math.max(isDiagram ? MIN_DIAGRAM_HEIGHT : 40, Math.min(Math.ceil(height), max.height));
     iframe.style.width = `${Math.ceil(width)}px`;
     iframe.style.height = `${height}px`;
   }
@@ -468,7 +476,10 @@
       requestId: currentRequestId,
       code: readCode(element),
       theme: isDarkPage() ? 'dark' : 'default',
+      // Keep the zoom level when the same snippet is shown again or edited.
+      keepView: element === lastRenderedElement,
     };
+    lastRenderedElement = element;
     if (iframeReady) {
       iframe.contentWindow.postMessage(message, PREVIEW_ORIGIN);
     } else {
@@ -488,9 +499,15 @@
         pendingRequest = null;
       }
     } else if (data.type === 'rendered' && data.requestId === currentRequestId) {
-      previewSize = { width: data.width, height: data.height };
+      previewSize = { width: data.width, height: data.height, kind: data.kind };
       tooltip.classList.remove('loading');
       positionTooltip();
+    } else if (data.type === 'interact' && tooltip && !tooltip.hidden) {
+      // The user is zooming or panning: keep the tooltip open until Escape or a click outside.
+      cancelHide();
+      pinned = true;
+    } else if (data.type === 'close') {
+      hideTooltip();
     }
   });
 
